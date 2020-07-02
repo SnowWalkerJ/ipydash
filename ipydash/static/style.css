@@ -1,0 +1,75 @@
+table, table tr th, table tr td {
+    border: 1px solid #151515;
+}
+table {
+    border: 1px solid #151515;
+    border-spacing: 0;
+}
+h1 {
+    text-align: center;
+    padding: 40px;
+}
+h2 {
+    text-align: center;
+    padding: 40px;
+}
+body {
+    background-color: darkgray;
+}
+.frame {
+    background-color: ivory;
+    margin: 0 8%;
+}
+.c1 {
+    float: left;
+    width: 10%;
+}
+.c2 {
+    float: left;
+    width: 20%;
+}
+.c3 {
+    float: left;
+    width: 30%;
+}
+.c4 {
+    float: left;
+    width: 40%;
+}
+.c5 {
+    float: left;
+    width: 50%;
+}
+.c6 {
+    float: left;
+    width: 60%;
+}
+.c7 {
+    float: left;
+    width: 70%;
+}
+.c8 {
+    float: left;
+    width: 80%;
+}
+.c9 {
+    float: left;
+    width: 90%;
+}
+
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+section {
+    padding: 1% 10%;
+    border-style: solid;
+    border-width: 1px;
+    border-color: darkgray;
+    border-radius: 3px;
+    box-shadow: 5px 5px 2px grey;
+    background-color: white;
+    margin: 30px 20px;
+}
