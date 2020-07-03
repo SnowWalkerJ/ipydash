@@ -1,1 +1,2 @@
-include ipydash/static/*
+recursive-include ipydash/static/ *.css
+recursive-include ipydash/static/ *.js
