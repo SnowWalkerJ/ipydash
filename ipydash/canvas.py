@@ -64,7 +64,7 @@ class Canvas(Node):
         return left, right
 
     def text(self, msg):
-        return self.new_node("p", html.escape(msg))
+        return self.new_node("p", html.escape(msg).replace("\n", "<br>"))
 
     def figure(self, fig):
         with io.BytesIO() as f:

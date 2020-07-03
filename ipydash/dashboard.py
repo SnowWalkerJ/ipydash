@@ -98,7 +98,10 @@ class DashboardMeta(type):
                 title = f"{function.__name__}({arguments})"
                 self.new_section(title)
                 self.input(clean_code(inspect.getsource(function)))
-                function(self, *args, **kwargs)
+                try:
+                    function(self, *args, **kwargs)
+                except Exception:
+                    self.output(traceback.format_exc())
                 if plt.gcf().get_axes():
                     self.output(plt.gcf())
                     plt.clf()
