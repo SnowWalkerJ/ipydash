@@ -73,3 +73,16 @@ section {
     background-color: white;
     margin: 30px 20px;
 }
+
+div.input {
+    border-style: solid;
+    border-width: 1px;
+    border-color: darkgray;
+    border-radius: 3px;
+    box-shadow: 5px 5px 2px grey;
+    /* background-color: floralwhite; */
+    margin-bottom: 30px;
+}
+div.result {
+    background-color: floralwhite;
+}

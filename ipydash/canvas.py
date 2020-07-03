@@ -10,7 +10,7 @@ class Node:
     def __init__(self, name, *children, **attrs):
         self.name = name
         self.attrs = attrs
-        self.children = []
+        self.children = list(children)
 
     def new_node(self, name, *children, cls=None, **attrs):
         if cls is None:
@@ -19,17 +19,16 @@ class Node:
         self.children.append(node)
         return node
 
-    def render(self):
+    def render(self, level=0):
         attrs = "".join(f" {key.replace('klass', 'class')}=\"{value}\"" for key, value in self.attrs.items())
-        head = f"<{self.name}{attrs}>"
-        tail = f"<{self.name}>"
+        head = f"{' ' * level}<{self.name}{attrs}>"
+        tail = f"{' ' * level}</{self.name}>"
         output = [head]
         for elem in self.children:
             if isinstance(elem, str):
-                output.append(" " + elem)
+                output.append(elem)
             else:
-                for line in elem.render():
-                    output.append("  " + line)
+                output.extend(elem.render(level + 1))
         output.append(tail)
         return output
 
@@ -38,18 +37,18 @@ class Node:
 
 
 class Label(Node):
-    def render(self):
+    def render(self, level):
         attrs = "".join(f" {key.replace('klass', 'class')}=\"{value}\"" for key, value in self.attrs.items())
-        return [f"<{self.name}{attrs}>"]
+        return [f"{' ' * level}<{self.name}{attrs}>"]
 
 
 class Canvas(Node):
-    def __init__(self, level=1, *children, **attrs):
+    def __init__(self, name, *children, level=1, **attrs):
         self.level = level
-        super().__init__("div", *children, **attrs)
+        super().__init__(name, *children, **attrs)
 
     def new_row(self, **attrs):
-        return self.new_canvas("section", **attrs)
+        return self.new_canvas(name="section", **attrs)
 
     def hr(self):
         self.new_label("hr")
@@ -60,12 +59,12 @@ class Canvas(Node):
     def split(self, width):
         wl, wr = width, 10 - width
         row = self.new_node("div", klass="row", cls=Canvas)
-        left = row.new_canvas("div", klass=f"c{wl}")
-        right = row.new_canvas("div", klass=f"c{wr}")
+        left = row.new_canvas(name="div", klass=f"c{wl}")
+        right = row.new_canvas(name="div", klass=f"c{wr}")
         return left, right
 
     def text(self, msg):
-        return self.new_node("p", msg)
+        return self.new_node("p", html.escape(msg))
 
     def figure(self, fig):
         with io.BytesIO() as f:
@@ -76,6 +75,11 @@ class Canvas(Node):
 
     def table(self, dataframe):
         self.children.extend(dataframe.style.render().split("\n"))
+
+    def code(self, code):
+        node = self.new_node("pre")
+        code = code.split("\n")
+        node.new_node("code", *code, klass="lang-python")
 
     def new_label(self, name, **attrs):
         self.children.append(Label(name, **attrs))
@@ -89,12 +93,11 @@ class Canvas(Node):
 class HTML(Canvas):
     def __init__(self, title):
         self._title = title
-        super().__init__()
-        head = self.new_node("head")
+        super().__init__(name="html")
+        head = super().new_node("head")
         head.new_node("title", title)
-        head.new_node("style")
-        body = self.new_canvas("body")
-        self.frame = body.new_canvas("div", level=1, klass="frame")
+        body = super().new_canvas(name="body")
+        self.frame = body.new_canvas(name="div", level=1, klass="frame")
 
     @functools.wraps(Canvas.new_row)
     def new_row(self, *args, **kwargs):
@@ -123,6 +126,10 @@ class HTML(Canvas):
     @functools.wraps(Canvas.table)
     def table(self, *args, **kwargs):
         return self.frame.table(*args, **kwargs)
+
+    @functools.wraps(Canvas.code)
+    def code(self, *args, **kwargs):
+        return self.frame.code(*args, **kwargs)
 
     @functools.wraps(Canvas.new_canvas)
     def new_canvas(self, *args, **kwargs):

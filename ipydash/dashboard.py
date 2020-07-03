@@ -1,6 +1,7 @@
 import functools
 import inspect
 import io
+import os
 import pprint
 import traceback
 
@@ -11,12 +12,30 @@ from .canvas import HTML, Canvas
 
 
 class Dashboard:
-    def __init__(self, title):
+    def __init__(self, title, style="default"):
         import matplotlib as mpl
         mpl.use("agg")
         self.canvas = HTML(title)
         self.canvas.title(title)
         self.current_canvas: Canvas = self.canvas
+        self.add_scripts(style)
+
+    def add_scripts(self, style):
+        html = super(HTML, self.canvas)
+        style_path = os.path.join(os.path.dirname(__file__), "static", style)
+        for filename in os.listdir(style_path):
+            suffix = filename.split(".")[-1]
+            if suffix not in ["css", "js"]:
+                continue
+            node_type = "style" if suffix == "css" else "script"
+            with open(os.path.join(style_path, filename)) as f:
+                script = f.read()
+            html.new_node(node_type, script)
+        html.new_node("script", "hljs.initHighlightingOnLoad();")
+
+    def input(self, code):
+        input_frame = self.current_canvas.new_canvas(name="div", klass="input")
+        input_frame.code(code)
 
     def output(self, obj):
         try:
@@ -41,10 +60,13 @@ class Dashboard:
                 self.current_canvas.text(f.read())
 
     def new_section(self, title):
-        section = self.current_canvas.new_row()
+        section = self.canvas.new_row()
         section.title(title)
         self.current_canvas = section
         return section
+
+    def show(self):
+        print(str(self.canvas))
 
 
 class DashboardMeta(type):
@@ -57,11 +79,17 @@ class DashboardMeta(type):
         return type(name, bases, members)
 
     @staticmethod
-    def wrap(function)
+    def wrap(function):
+        def clean_code(code):
+            code = code.split("\n")[1:-1]
+            common_indent = min(len(line) - len(line.lstrip()) for line in code)
+            code = [line[common_indent:] for line in code]
+            return "\n".join(code)
+
         @functools.wraps(function)
         def wrapped(self, *args, **kwargs):
             stack = traceback.extract_stack()
-            if len(stack) >=2 and stack[-2].name == "_CallAndUpdateTrace":
+            if len(stack) >= 2 and stack[-2].name == "_CallAndUpdateTrace":
                 import matplotlib.pyplot as plt
                 sig = inspect.signature(function)
                 params = sig.bind(self, *args, **kwargs)
@@ -69,6 +97,7 @@ class DashboardMeta(type):
                 arguments = ", ".join(f"{key}={repr(value)}" for key, value in params.arguments.items() if key != "self")
                 title = f"{function.__name__}({arguments})"
                 self.new_section(title)
+                self.input(clean_code(inspect.getsource(function)))
                 function(self, *args, **kwargs)
                 if plt.gcf().get_axes():
                     self.output(plt.gcf())
