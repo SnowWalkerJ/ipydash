@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import inspect
 import io
@@ -36,6 +37,9 @@ class Dashboard:
     def input(self, code):
         input_frame = self.current_canvas.new_canvas(name="div", klass="input")
         input_frame.code(code)
+
+    def write(self, text):
+        self.output(text)
 
     def output(self, obj):
         try:
@@ -97,7 +101,8 @@ class DashboardMeta(type):
             self.new_section(title)
             self.input(clean_code(inspect.getsource(function)))
             try:
-                function(self, *args, **kwargs)
+                with contextlib.redirect_stdout(self):
+                    function(self, *args, **kwargs)
             except Exception:
                 self.output(traceback.format_exc())
             if plt.gcf().get_axes():
