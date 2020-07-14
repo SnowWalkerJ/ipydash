@@ -72,7 +72,7 @@ class Dashboard:
 class DashboardMeta(type):
     def __new__(cls, name, bases, members):
         for key, value in members.items():
-            if inspect.isfunction(value) and key != "__init__":
+            if inspect.isfunction(value) and not key.startswith("_"):
                 members[key] = cls.wrap(value)
         if not any(issubclass(base, Dashboard) for base in bases):
             bases = tuple(list(bases) + [Dashboard])
@@ -88,24 +88,20 @@ class DashboardMeta(type):
 
         @functools.wraps(function)
         def wrapped(self, *args, **kwargs):
-            stack = traceback.extract_stack()
-            if len(stack) >= 2 and stack[-2].name == "_CallAndUpdateTrace":
-                import matplotlib.pyplot as plt
-                sig = inspect.signature(function)
-                params = sig.bind(self, *args, **kwargs)
-                params.apply_defaults()
-                arguments = ", ".join(f"{key}={repr(value)}" for key, value in params.arguments.items() if key != "self")
-                title = f"{function.__name__}({arguments})"
-                self.new_section(title)
-                self.input(clean_code(inspect.getsource(function)))
-                try:
-                    function(self, *args, **kwargs)
-                except Exception:
-                    self.output(traceback.format_exc())
-                if plt.gcf().get_axes():
-                    self.output(plt.gcf())
-                    plt.clf()
-                return self
-            else:
-                return function(self, *args, **kwargs)
+            import matplotlib.pyplot as plt
+            sig = inspect.signature(function)
+            params = sig.bind(self, *args, **kwargs)
+            params.apply_defaults()
+            arguments = ", ".join(f"{key}={repr(value)}" for key, value in params.arguments.items() if key != "self")
+            title = f"{function.__name__}({arguments})"
+            self.new_section(title)
+            self.input(clean_code(inspect.getsource(function)))
+            try:
+                function(self, *args, **kwargs)
+            except Exception:
+                self.output(traceback.format_exc())
+            if plt.gcf().get_axes():
+                self.output(plt.gcf())
+                plt.clf()
+            return self
         return wrapped
