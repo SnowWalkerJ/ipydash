@@ -105,8 +105,8 @@ class DashboardMeta(type):
                     function(self, *args, **kwargs)
             except Exception:
                 self.output(traceback.format_exc())
-            if plt.gcf().get_axes():
+            if plt.get_fignums():
                 self.output(plt.gcf())
-                plt.clf()
+                plt.close('all')
             return self
         return wrapped
